@@ -1,0 +1,37 @@
+
+body {
+  background: linear-gradient(to bottom, #1a1a2e, #000000);
+  color: #ffffff;
+  font-family: 'Courier New', Courier, monospace;
+  text-align: center;
+  margin: 0;
+}
+h1 {
+  margin: 10px 0;
+  color: #ffe600;
+  text-shadow: 2px 2px #000;
+}
+#hud {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+canvas {
+  image-rendering: pixelated;
+  border: 3px solid #fff;
+  background-color: #222;
+}
+.controls {
+  margin-top: 15px;
+}
+button {
+  font-size: 24px;
+  margin: 5px;
+  padding: 10px 20px;
+  background-color: #444;
+  color: white;
+  border: none;
+  border-radius: 10px;
+}
+button:active {
+  background-color: #777;
+}
