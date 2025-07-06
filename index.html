@@ -1,31 +1,14 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Medieval Quest Extended</title>
+  <title></title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>🛡️ Medieval Quest Extended ⚔️</h1>
-  <div id="hud">Nivel: <span id="level">1</span> | Vidas: <span id="lives">3</span></div>
-  <canvas id="gameCanvas" width="512" height="256"></canvas>
-  <div class="controls">
-    <button onclick="press('ArrowLeft')">⬅️</button>
-    <button onclick="press('ArrowUp')">⬆️</button>
-    <button onclick="press('ArrowDown')">⬇️</button>
-    <button onclick="press('ArrowRight')">➡️</button>
-    <button onclick="press(' ')">💥</button>
-  </div>
+  <h1> Arcade</h1>
+  <canvas id="gameCanvas" width="600" height="400"></canvas>
+  <p>Usa las flechas para moverte. Avanza hasta el borde derecho para subir de nivel.</p>
   <script src="game.js"></script>
-
-  <audio id="bgMusic" src="music.mp3" loop autoplay></audio>
-  <script>
-    window.addEventListener('click', () => {
-      document.getElementById('bgMusic').play();
-    });
-  </script>
-  </body>
-  
+</body>
 </html>
