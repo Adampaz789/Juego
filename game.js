@@ -1,4 +1,3 @@
-
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const WIDTH = canvas.width;
@@ -20,6 +19,7 @@ const finalScore = document.getElementById('finalScore');
 const winScreen = document.getElementById('winScreen');
 const winScore = document.getElementById('winScore');
 const restartWinBtn = document.getElementById('restartWinBtn');
+
 const levels = [
   { name: "Enchanted Forest", color: "#00ff88", enemyColor: "#008855", bossColor: "#22ff88" },
   { name: "Dark Grove", color: "#44ff44", enemyColor: "#228822", bossColor: "#55ff55" },
@@ -36,7 +36,7 @@ const levels = [
 let currentLevelIndex = 0;
 let playerRunes = 0;
 let game;
-// 🌳 Fondo dinámico
+
 class Background {
   constructor(color) {
     this.color = color;
@@ -104,7 +104,6 @@ class Player {
 
   draw() {
     if (this.invulnerable && this.invulnerableTimer % 10 < 5) return;
-
     ctx.fillStyle = this.color;
     ctx.shadowBlur = 15;
     ctx.shadowColor = this.color;
@@ -231,7 +230,8 @@ class Item {
     ctx.fillRect(this.x, this.y, this.w, this.h);
     ctx.shadowBlur = 0;
   }
-          }
+}
+
 class Game {
   constructor() {
     this.bg = new Background(levels[currentLevelIndex].color);
@@ -377,7 +377,13 @@ class Game {
   }
 }
 
-let game;
+// 🎮 Eventos globales
+document.addEventListener('keydown', e => {
+  if (game) game.keys[e.key] = true;
+});
+document.addEventListener('keyup', e => {
+  if (game) game.keys[e.key] = false;
+});
 
 function startGame() {
   game = new Game();
@@ -387,9 +393,6 @@ function startGame() {
   transitionScreen.style.display = 'none';
   shopScreen.style.display = 'none';
   canvas.style.display = 'block';
-
-  document.addEventListener('keydown', e => game.keys[e.key] = true);
-  document.addEventListener('keyup', e => game.keys[e.key] = false);
 
   requestAnimationFrame(gameLoop);
 }
@@ -466,4 +469,3 @@ buySwordBtn.addEventListener('click', () => {
     playerRunes -= 100;
   }
 });
-
