@@ -8,16 +8,49 @@ const menu = document.getElementById('menu');
 const gameOverScreen = document.getElementById('gameOverScreen');
 const restartBtn = document.getElementById('restartBtn');
 const finalScore = document.getElementById('finalScore');
+const winScreen = document.getElementById('winScreen');
+const winScore = document.getElementById('winScore');
+const restartWinBtn = document.getElementById('restartWinBtn');
+
+class Background {
+  constructor() {
+    this.stars = Array.from({ length: 100 }, () => ({
+      x: Math.random() * WIDTH,
+      y: Math.random() * HEIGHT,
+      size: Math.random() * 2,
+      speed: 0.5 + Math.random()
+    }));
+  }
+
+  update() {
+    for (let star of this.stars) {
+      star.x -= star.speed;
+      if (star.x < 0) {
+        star.x = WIDTH;
+        star.y = Math.random() * HEIGHT;
+      }
+    }
+  }
+
+  draw() {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    ctx.fillStyle = "#0ff";
+    for (let star of this.stars) {
+      ctx.fillRect(star.x, star.y, star.size, star.size);
+    }
+  }
+}
 
 class Player {
   constructor() {
-    this.w = 30;
-    this.h = 30;
-    this.x = 50;
+    this.w = 28;
+    this.h = 28;
+    this.x = 60;
     this.y = HEIGHT / 2 - this.h / 2;
-    this.color = '#00ffcc';
+    this.color = "#0ff";
     this.lives = 3;
-    this.speed = 4;
+    this.speed = 5;
     this.invulnerable = false;
     this.invulnerableTimer = 0;
     this.score = 0;
@@ -41,13 +74,15 @@ class Player {
   draw() {
     if (this.invulnerable && this.invulnerableTimer % 10 < 5) return;
     ctx.fillStyle = this.color;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
+    ctx.shadowBlur = 0;
 
-    // "carita" pixel art style
-    ctx.fillStyle = '#000';
+    // "eyes"
+    ctx.fillStyle = "#000";
     ctx.fillRect(this.x + 8, this.y + 8, 4, 4);
-    ctx.fillRect(this.x + 18, this.y + 8, 4, 4);
-    ctx.fillRect(this.x + 10, this.y + 20, 10, 3);
+    ctx.fillRect(this.x + 16, this.y + 8, 4, 4);
   }
 
   hit() {
@@ -60,80 +95,93 @@ class Player {
 }
 
 class Enemy {
-  constructor(x, y, speed, type = 1) {
+  constructor(x, y, speed, pattern = 1) {
     this.x = x;
     this.y = y;
     this.w = 25;
     this.h = 25;
-    this.color = '#ff0055';
+    this.color = "#ff0080";
     this.speed = speed;
-    this.direction = type === 1 ? 1 : -1;
-    this.type = type;
+    this.pattern = pattern;
+    this.direction = 1;
   }
 
   update() {
-    if (this.type === 1) {
-      this.x += this.speed * this.direction;
-      if (this.x <= 0 || this.x + this.w >= WIDTH) this.direction *= -1;
-    } else if (this.type === 2) {
-      this.y += this.speed * this.direction;
+    if (this.pattern === 1) {
+      this.x -= this.speed;
+    } else if (this.pattern === 2) {
+      this.x -= this.speed;
+      this.y += Math.sin(this.x / 20) * 3;
+    } else if (this.pattern === 3) {
+      this.x -= this.speed;
+      this.y += this.direction * this.speed / 2;
       if (this.y <= 0 || this.y + this.h >= HEIGHT) this.direction *= -1;
-    } else if (this.type === 3) {
-      this.x += this.speed * this.direction;
-      this.y += Math.sin(this.x / 20) * 2;
-      if (this.x <= 0 || this.x + this.w >= WIDTH) this.direction *= -1;
     }
   }
 
   draw() {
     ctx.fillStyle = this.color;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
+    ctx.shadowBlur = 0;
   }
 }
 
-class PowerUp {
-  constructor(type) {
-    this.w = 20;
-    this.h = 20;
-    this.x = 100 + Math.random() * (WIDTH - 200);
-    this.y = 50 + Math.random() * (HEIGHT - 100);
-    this.type = type;
-    this.color = type === 'life' ? '#00ff00' : '#ffcc00';
-    this.active = true;
+class Boss {
+  constructor() {
+    this.x = WIDTH + 200;
+    this.y = HEIGHT / 2 - 80;
+    this.w = 160;
+    this.h = 160;
+    this.color = "#ff0";
+    this.hp = 50;
+    this.speed = 2;
+    this.direction = 1;
+  }
+
+  update() {
+    this.x -= this.speed;
+    this.y += this.direction * 2;
+    if (this.y <= 0 || this.y + this.h >= HEIGHT) this.direction *= -1;
   }
 
   draw() {
-    if (!this.active) return;
     ctx.fillStyle = this.color;
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
+    ctx.shadowBlur = 0;
+
+    // Eyes
+    ctx.fillStyle = "#000";
+    ctx.fillRect(this.x + 40, this.y + 40, 20, 20);
+    ctx.fillRect(this.x + 100, this.y + 40, 20, 20);
+
+    // Mouth
+    ctx.fillRect(this.x + 60, this.y + 110, 40, 10);
   }
 }
 
 class Game {
   constructor() {
+    this.bg = new Background();
     this.player = new Player();
     this.enemies = [];
-    this.powerUps = [];
+    this.boss = null;
     this.keys = {};
     this.level = 1;
+    this.bossAppeared = false;
     this.gameOver = false;
+    this.bossKilled = false;
+    this.spawnCooldown = 0;
   }
 
-  spawnEnemies() {
-    this.enemies = [];
-    for (let i = 0; i < this.level + 2; i++) {
-      let type = Math.floor(Math.random() * 3) + 1;
-      let x = 150 + i * 80;
-      let y = 50 + Math.random() * (HEIGHT - 100);
-      let speed = 1 + this.level * 0.5;
-      this.enemies.push(new Enemy(x, y, speed, type));
-    }
-  }
-
-  spawnPowerUp() {
-    const types = ['life', 'invulnerable'];
-    const type = types[Math.floor(Math.random() * types.length)];
-    this.powerUps.push(new PowerUp(type));
+  spawnEnemy() {
+    let y = Math.random() * (HEIGHT - 50);
+    let speed = 3 + this.level * 0.5;
+    let pattern = Math.floor(Math.random() * 3) + 1;
+    this.enemies.push(new Enemy(WIDTH, y, speed, pattern));
   }
 
   checkCollision(a, b) {
@@ -146,7 +194,20 @@ class Game {
   update() {
     if (this.gameOver) return;
 
+    this.bg.update();
     this.player.update(this.keys);
+
+    if (!this.bossAppeared && this.player.score >= 3000) {
+      this.boss = new Boss();
+      this.bossAppeared = true;
+    }
+
+    if (!this.bossAppeared && this.spawnCooldown <= 0) {
+      this.spawnEnemy();
+      this.spawnCooldown = 90 - this.level * 3;
+    } else {
+      this.spawnCooldown--;
+    }
 
     for (let enemy of this.enemies) {
       enemy.update();
@@ -154,55 +215,58 @@ class Game {
         this.player.hit();
         if (this.player.lives <= 0) {
           this.gameOver = true;
-          gameOverScreen.style.display = 'block';
-          canvas.style.display = 'none';
-          finalScore.textContent = `Score: ${this.player.score}`;
+          showGameOver();
         }
       }
     }
 
-    for (let powerUp of this.powerUps) {
-      if (powerUp.active && this.checkCollision(this.player, powerUp)) {
-        if (powerUp.type === 'life') {
-          this.player.lives++;
-        } else if (powerUp.type === 'invulnerable') {
-          this.player.invulnerable = true;
-          this.player.invulnerableTimer = 120;
+    if (this.boss) {
+      this.boss.update();
+      if (this.checkCollision(this.player, this.boss)) {
+        this.player.hit();
+        if (this.player.lives <= 0) {
+          this.gameOver = true;
+          showGameOver();
         }
-        powerUp.active = false;
-        this.player.score += 50;
+      }
+
+      if (this.boss.x < WIDTH - this.boss.w - 20) {
+        this.boss.hp -= 0.1;
+      }
+
+      if (this.boss.hp <= 0) {
+        this.bossKilled = true;
+        this.gameOver = true;
+        showWin();
       }
     }
 
-    if (this.player.x + this.player.w >= WIDTH - 20) {
-      this.level++;
-      this.player.x = 50;
-      this.player.y = HEIGHT / 2 - this.player.h / 2;
-      this.spawnEnemies();
-      this.spawnPowerUp();
-      this.player.score += 100;
-    }
+    this.enemies = this.enemies.filter(e => e.x + e.w > 0);
+
+    this.player.score += 1;
+    if (this.player.score % 1000 === 0) this.level++;
   }
 
   drawHUD() {
-    ctx.fillStyle = '#fff';
-    ctx.font = '16px monospace';
-    ctx.fillText(`Level: ${this.level}`, 10, 20);
-    ctx.fillText(`Lives: ${this.player.lives}`, 10, 40);
-    ctx.fillText(`Score: ${this.player.score}`, 10, 60);
+    ctx.fillStyle = "#fff";
+    ctx.font = "16px monospace";
+    ctx.fillText(`Lives: ${this.player.lives}`, 10, 25);
+    ctx.fillText(`Score: ${this.player.score}`, 10, 50);
+    ctx.fillText(`Level: ${this.level}`, 10, 75);
+
+    if (this.boss) {
+      ctx.fillStyle = "#ff0";
+      ctx.fillText(`Boss HP: ${Math.max(0, Math.floor(this.boss.hp))}`, WIDTH - 150, 25);
+    }
   }
 
   draw() {
-    ctx.fillStyle = '#1c1c1c';
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-    for (let powerUp of this.powerUps) {
-      powerUp.draw();
-    }
+    this.bg.draw();
     this.player.draw();
     for (let enemy of this.enemies) {
       enemy.draw();
     }
+    if (this.boss) this.boss.draw();
     this.drawHUD();
   }
 }
@@ -211,16 +275,27 @@ let game;
 
 function startGame() {
   game = new Game();
-  game.spawnEnemies();
-  game.spawnPowerUp();
   menu.style.display = 'none';
   gameOverScreen.style.display = 'none';
+  winScreen.style.display = 'none';
   canvas.style.display = 'block';
 
   document.addEventListener('keydown', e => game.keys[e.key] = true);
   document.addEventListener('keyup', e => game.keys[e.key] = false);
 
   requestAnimationFrame(gameLoop);
+}
+
+function showGameOver() {
+  finalScore.textContent = `Score: ${game.player.score}`;
+  gameOverScreen.style.display = 'block';
+  canvas.style.display = 'none';
+}
+
+function showWin() {
+  winScore.textContent = `Score: ${game.player.score}`;
+  winScreen.style.display = 'block';
+  canvas.style.display = 'none';
 }
 
 function gameLoop() {
@@ -235,3 +310,4 @@ function gameLoop() {
 
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
+restartWinBtn.addEventListener('click', startGame);
