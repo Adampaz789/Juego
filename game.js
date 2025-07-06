@@ -14,30 +14,30 @@ const restartWinBtn = document.getElementById('restartWinBtn');
 
 class Background {
   constructor() {
-    this.stars = Array.from({ length: 100 }, () => ({
+    this.lights = Array.from({ length: 100 }, () => ({
       x: Math.random() * WIDTH,
       y: Math.random() * HEIGHT,
       size: Math.random() * 2,
-      speed: 0.5 + Math.random()
+      speed: 0.3 + Math.random()
     }));
   }
 
   update() {
-    for (let star of this.stars) {
-      star.x -= star.speed;
-      if (star.x < 0) {
-        star.x = WIDTH;
-        star.y = Math.random() * HEIGHT;
+    for (let light of this.lights) {
+      light.x -= light.speed;
+      if (light.x < 0) {
+        light.x = WIDTH;
+        light.y = Math.random() * HEIGHT;
       }
     }
   }
 
   draw() {
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = "#0a0a0a";
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    ctx.fillStyle = "#0ff";
-    for (let star of this.stars) {
-      ctx.fillRect(star.x, star.y, star.size, star.size);
+    ctx.fillStyle = "#55ff55";
+    for (let light of this.lights) {
+      ctx.fillRect(light.x, light.y, light.size, light.size);
     }
   }
 }
@@ -48,7 +48,7 @@ class Player {
     this.h = 28;
     this.x = 60;
     this.y = HEIGHT / 2 - this.h / 2;
-    this.color = "#0ff";
+    this.color = "#aaffaa";
     this.lives = 3;
     this.speed = 5;
     this.invulnerable = false;
@@ -79,10 +79,10 @@ class Player {
     ctx.fillRect(this.x, this.y, this.w, this.h);
     ctx.shadowBlur = 0;
 
-    // "eyes"
+    // "helmet" medieval style
     ctx.fillStyle = "#000";
-    ctx.fillRect(this.x + 8, this.y + 8, 4, 4);
-    ctx.fillRect(this.x + 16, this.y + 8, 4, 4);
+    ctx.fillRect(this.x + 6, this.y + 6, 16, 4);
+    ctx.fillRect(this.x + 10, this.y + 12, 8, 4);
   }
 
   hit() {
@@ -100,7 +100,7 @@ class Enemy {
     this.y = y;
     this.w = 25;
     this.h = 25;
-    this.color = "#ff0080";
+    this.color = "#ff5555";
     this.speed = speed;
     this.pattern = pattern;
     this.direction = 1;
@@ -111,7 +111,7 @@ class Enemy {
       this.x -= this.speed;
     } else if (this.pattern === 2) {
       this.x -= this.speed;
-      this.y += Math.sin(this.x / 20) * 3;
+      this.y += Math.sin(this.x / 15) * 3;
     } else if (this.pattern === 3) {
       this.x -= this.speed;
       this.y += this.direction * this.speed / 2;
@@ -121,7 +121,7 @@ class Enemy {
 
   draw() {
     ctx.fillStyle = this.color;
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = 10;
     ctx.shadowColor = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
     ctx.shadowBlur = 0;
@@ -134,9 +134,9 @@ class Boss {
     this.y = HEIGHT / 2 - 80;
     this.w = 160;
     this.h = 160;
-    this.color = "#ff0";
+    this.color = "#ffaa00";
     this.hp = 50;
-    this.speed = 2;
+    this.speed = 1.5;
     this.direction = 1;
   }
 
@@ -153,12 +153,12 @@ class Boss {
     ctx.fillRect(this.x, this.y, this.w, this.h);
     ctx.shadowBlur = 0;
 
-    // Eyes
+    // "eyes" medieval beast style
     ctx.fillStyle = "#000";
     ctx.fillRect(this.x + 40, this.y + 40, 20, 20);
     ctx.fillRect(this.x + 100, this.y + 40, 20, 20);
 
-    // Mouth
+    // "fangs"
     ctx.fillRect(this.x + 60, this.y + 110, 40, 10);
   }
 }
@@ -255,8 +255,8 @@ class Game {
     ctx.fillText(`Level: ${this.level}`, 10, 75);
 
     if (this.boss) {
-      ctx.fillStyle = "#ff0";
-      ctx.fillText(`Boss HP: ${Math.max(0, Math.floor(this.boss.hp))}`, WIDTH - 150, 25);
+      ctx.fillStyle = "#ffaa00";
+      ctx.fillText(`Boss HP: ${Math.max(0, Math.floor(this.boss.hp))}`, WIDTH - 160, 25);
     }
   }
 
