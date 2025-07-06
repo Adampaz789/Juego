@@ -1,27 +1,33 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
 
+const startBtn = document.getElementById('startBtn');
+const menu = document.getElementById('menu');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const restartBtn = document.getElementById('restartBtn');
+const finalScore = document.getElementById('finalScore');
+
 class Player {
   constructor() {
-    this.w = 20;
-    this.h = 20;
+    this.w = 30;
+    this.h = 30;
     this.x = 50;
     this.y = HEIGHT / 2 - this.h / 2;
-    this.color = '#00f';
+    this.color = '#00ffcc';
     this.lives = 3;
-    this.speed = 3;
+    this.speed = 4;
     this.invulnerable = false;
     this.invulnerableTimer = 0;
+    this.score = 0;
   }
 
   update(keys) {
-    if (keys['ArrowRight']) this.x += this.speed;
-    if (keys['ArrowLeft']) this.x -= this.speed;
-    if (keys['ArrowUp']) this.y -= this.speed;
-    if (keys['ArrowDown']) this.y += this.speed;
+    if (keys['ArrowRight'] || keys['d']) this.x += this.speed;
+    if (keys['ArrowLeft'] || keys['a']) this.x -= this.speed;
+    if (keys['ArrowUp'] || keys['w']) this.y -= this.speed;
+    if (keys['ArrowDown'] || keys['s']) this.y += this.speed;
 
     this.x = Math.max(0, Math.min(WIDTH - this.w, this.x));
     this.y = Math.max(0, Math.min(HEIGHT - this.h, this.y));
@@ -36,10 +42,12 @@ class Player {
     if (this.invulnerable && this.invulnerableTimer % 10 < 5) return;
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
-    ctx.fillStyle = 'white';
-    ctx.fillRect(this.x + 5, this.y + 5, 3, 3);
-    ctx.fillRect(this.x + 12, this.y + 5, 3, 3);
-    ctx.fillRect(this.x + 7, this.y + 14, 6, 2);
+
+    // "carita" pixel art style
+    ctx.fillStyle = '#000';
+    ctx.fillRect(this.x + 8, this.y + 8, 4, 4);
+    ctx.fillRect(this.x + 18, this.y + 8, 4, 4);
+    ctx.fillRect(this.x + 10, this.y + 20, 10, 3);
   }
 
   hit() {
@@ -55,9 +63,9 @@ class Enemy {
   constructor(x, y, speed, type = 1) {
     this.x = x;
     this.y = y;
-    this.w = 20;
-    this.h = 20;
-    this.color = 'red';
+    this.w = 25;
+    this.h = 25;
+    this.color = '#ff0055';
     this.speed = speed;
     this.direction = type === 1 ? 1 : -1;
     this.type = type;
@@ -80,18 +88,17 @@ class Enemy {
   draw() {
     ctx.fillStyle = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
-    ctx.fillStyle = 'black';
-    ctx.fillRect(this.x + 5, this.y + 5, 3, 3);
   }
 }
 
 class PowerUp {
-  constructor() {
-    this.w = 15;
-    this.h = 15;
+  constructor(type) {
+    this.w = 20;
+    this.h = 20;
     this.x = 100 + Math.random() * (WIDTH - 200);
     this.y = 50 + Math.random() * (HEIGHT - 100);
-    this.color = 'green';
+    this.type = type;
+    this.color = type === 'life' ? '#00ff00' : '#ffcc00';
     this.active = true;
   }
 
@@ -106,21 +113,15 @@ class Game {
   constructor() {
     this.player = new Player();
     this.enemies = [];
-    this.powerUp = null;
+    this.powerUps = [];
     this.keys = {};
     this.level = 1;
     this.gameOver = false;
-
-    document.addEventListener('keydown', e => this.keys[e.key] = true);
-    document.addEventListener('keyup', e => this.keys[e.key] = false);
-
-    this.spawnEnemies();
-    this.spawnPowerUp();
   }
 
   spawnEnemies() {
     this.enemies = [];
-    for (let i = 0; i < this.level + 1; i++) {
+    for (let i = 0; i < this.level + 2; i++) {
       let type = Math.floor(Math.random() * 3) + 1;
       let x = 150 + i * 80;
       let y = 50 + Math.random() * (HEIGHT - 100);
@@ -130,7 +131,9 @@ class Game {
   }
 
   spawnPowerUp() {
-    this.powerUp = new PowerUp();
+    const types = ['life', 'invulnerable'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    this.powerUps.push(new PowerUp(type));
   }
 
   checkCollision(a, b) {
@@ -151,13 +154,24 @@ class Game {
         this.player.hit();
         if (this.player.lives <= 0) {
           this.gameOver = true;
+          gameOverScreen.style.display = 'block';
+          canvas.style.display = 'none';
+          finalScore.textContent = `Score: ${this.player.score}`;
         }
       }
     }
 
-    if (this.powerUp && this.powerUp.active && this.checkCollision(this.player, this.powerUp)) {
-      this.player.lives++;
-      this.powerUp.active = false;
+    for (let powerUp of this.powerUps) {
+      if (powerUp.active && this.checkCollision(this.player, powerUp)) {
+        if (powerUp.type === 'life') {
+          this.player.lives++;
+        } else if (powerUp.type === 'invulnerable') {
+          this.player.invulnerable = true;
+          this.player.invulnerableTimer = 120;
+        }
+        powerUp.active = false;
+        this.player.score += 50;
+      }
     }
 
     if (this.player.x + this.player.w >= WIDTH - 20) {
@@ -166,31 +180,25 @@ class Game {
       this.player.y = HEIGHT / 2 - this.player.h / 2;
       this.spawnEnemies();
       this.spawnPowerUp();
+      this.player.score += 100;
     }
   }
 
   drawHUD() {
-    ctx.fillStyle = 'black';
+    ctx.fillStyle = '#fff';
     ctx.font = '16px monospace';
-    ctx.fillText(`Nivel: ${this.level}`, 10, 20);
-    ctx.fillText(`Vidas: ${this.player.lives}`, 10, 40);
-
-    if (this.gameOver) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(0, 0, WIDTH, HEIGHT);
-      ctx.fillStyle = 'white';
-      ctx.font = '30px monospace';
-      ctx.fillText('GAME OVER', WIDTH / 2 - 100, HEIGHT / 2);
-      ctx.font = '20px monospace';
-      ctx.fillText('Recarga para reiniciar', WIDTH / 2 - 120, HEIGHT / 2 + 40);
-    }
+    ctx.fillText(`Level: ${this.level}`, 10, 20);
+    ctx.fillText(`Lives: ${this.player.lives}`, 10, 40);
+    ctx.fillText(`Score: ${this.player.score}`, 10, 60);
   }
 
   draw() {
-    ctx.fillStyle = '#e0f7fa';
+    ctx.fillStyle = '#1c1c1c';
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    if (this.powerUp) this.powerUp.draw();
+    for (let powerUp of this.powerUps) {
+      powerUp.draw();
+    }
     this.player.draw();
     for (let enemy of this.enemies) {
       enemy.draw();
@@ -199,12 +207,31 @@ class Game {
   }
 }
 
-const game = new Game();
+let game;
 
-function gameLoop() {
-  game.update();
-  game.draw();
+function startGame() {
+  game = new Game();
+  game.spawnEnemies();
+  game.spawnPowerUp();
+  menu.style.display = 'none';
+  gameOverScreen.style.display = 'none';
+  canvas.style.display = 'block';
+
+  document.addEventListener('keydown', e => game.keys[e.key] = true);
+  document.addEventListener('keyup', e => game.keys[e.key] = false);
+
   requestAnimationFrame(gameLoop);
 }
 
-gameLoop();
+function gameLoop() {
+  if (game) {
+    game.update();
+    game.draw();
+    if (!game.gameOver) {
+      requestAnimationFrame(gameLoop);
+    }
+  }
+}
+
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', startGame);
