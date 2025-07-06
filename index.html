@@ -2,20 +2,31 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Pixel Runner</title>
+  <title>Neon Galaxy: Final Strike</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="menu">
-    <h1>🚀 Pixel Runner 🚀</h1>
-    <button id="startBtn">Start Game</button>
+    <h1>🌌 Neon Galaxy: Final Strike 🌌</h1>
+    <p class="pulse">Press Start</p>
+    <button id="startBtn">START GAME</button>
   </div>
-  <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+  <canvas id="gameCanvas" width="900" height="500"></canvas>
+
   <div id="gameOverScreen" style="display:none;">
-    <h2>💀 Game Over 💀</h2>
+    <h2>💀 GAME OVER 💀</h2>
     <p id="finalScore"></p>
-    <button id="restartBtn">Restart</button>
+    <button id="restartBtn">RESTART</button>
   </div>
+
+  <div id="winScreen" style="display:none;">
+    <h2>🏆 YOU WON! 🏆</h2>
+    <p>Congratulations, hero of the galaxy!</p>
+    <p id="winScore"></p>
+    <button id="restartWinBtn">RESTART</button>
+  </div>
+
   <script src="game.js"></script>
 </body>
 </html>
