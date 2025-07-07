@@ -79,6 +79,8 @@ class Player {
     this.speed = 5;
     this.invulnerable = false;
     this.invulnerableTimer = 0;
+    this.shield = false;
+    this.sword = false;
   }
 
   update(keys) {
@@ -94,16 +96,34 @@ class Player {
       this.invulnerableTimer--;
       if (this.invulnerableTimer <= 0) {
         this.invulnerable = false;
+        this.shield = false;
+        this.sword = false;
       }
     }
   }
 
   draw() {
+    if (this.invulnerable && this.invulnerableTimer % 10 < 5) return;
     ctx.fillStyle = this.color;
     ctx.shadowBlur = 15;
     ctx.shadowColor = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
     ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(this.x + 6, this.y + 6, 16, 4);
+    ctx.fillRect(this.x + 10, this.y + 12, 8, 4);
+
+    if (this.shield) {
+      ctx.strokeStyle = "#00f";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(this.x - 3, this.y - 3, this.w + 6, this.h + 6);
+    }
+
+    if (this.sword) {
+      ctx.fillStyle = "#ff0";
+      ctx.fillRect(this.x + this.w, this.y + this.h / 2 - 2, 10, 4);
+    }
   }
 
   hit() {
@@ -139,7 +159,10 @@ class Enemy {
 
   draw() {
     ctx.fillStyle = this.color;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
+    ctx.shadowBlur = 0;
   }
 }
 
@@ -150,26 +173,34 @@ class Boss {
     this.w = 160;
     this.h = 160;
     this.color = color;
-
-    if (currentLevelIndex === levels.length - 1) {
-      this.hp = 30;
-    } else {
-      this.hp = 10;
-    }
-
+    this.hp = 30; // ✅ Vida reducida a la mitad
     this.speed = 1.5;
     this.direction = 1;
+    this.phase = 1;
   }
 
   update() {
     this.x -= this.speed;
     this.y += this.direction * 2;
     if (this.y <= 0 || this.y + this.h >= HEIGHT) this.direction *= -1;
+
+    if (this.hp < 15 && this.phase === 1) {
+      this.phase = 2;
+      this.speed += 1;
+    }
   }
 
   draw() {
     ctx.fillStyle = this.color;
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(this.x + 40, this.y + 40, 20, 20);
+    ctx.fillRect(this.x + 100, this.y + 40, 20, 20);
+    ctx.fillRect(this.x + 60, this.y + 110, 40, 10);
   }
 }
 
@@ -262,7 +293,7 @@ class Game {
       }
 
       if (this.boss && this.checkCollision(projectile, this.boss)) {
-        this.boss.hp -= 5;
+        this.boss.hp -= 5; // ✅ Daño aumentado
         projectile.active = false;
         if (this.boss.hp <= 0) {
           this.gameOver = true;
@@ -324,6 +355,7 @@ function startGame() {
   transitionScreen.style.display = 'none';
   shopScreen.style.display = 'none';
   canvas.style.display = 'block';
+
   requestAnimationFrame(gameLoop);
 }
 
@@ -386,15 +418,14 @@ buyLifeBtn.addEventListener('click', () => {
 
 buyShieldBtn.addEventListener('click', () => {
   if (playerRunes >= 75) {
-    game.player.invulnerable = true;
-    game.player.invulnerableTimer = 150;
+    game.player.shield = true;
     playerRunes -= 75;
   }
 });
 
 buySwordBtn.addEventListener('click', () => {
   if (playerRunes >= 100) {
-    // Aquí podrías agregar mejora futura
+    game.player.sword = true;
     playerRunes -= 100;
   }
 });
