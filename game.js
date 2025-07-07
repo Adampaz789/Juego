@@ -79,8 +79,6 @@ class Player {
     this.speed = 5;
     this.invulnerable = false;
     this.invulnerableTimer = 0;
-    this.shield = false;
-    this.sword = false;
   }
 
   update(keys) {
@@ -96,34 +94,16 @@ class Player {
       this.invulnerableTimer--;
       if (this.invulnerableTimer <= 0) {
         this.invulnerable = false;
-        this.shield = false;
-        this.sword = false;
       }
     }
   }
 
   draw() {
-    if (this.invulnerable && this.invulnerableTimer % 10 < 5) return;
     ctx.fillStyle = this.color;
     ctx.shadowBlur = 15;
     ctx.shadowColor = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
     ctx.shadowBlur = 0;
-
-    ctx.fillStyle = "#000";
-    ctx.fillRect(this.x + 6, this.y + 6, 16, 4);
-    ctx.fillRect(this.x + 10, this.y + 12, 8, 4);
-
-    if (this.shield) {
-      ctx.strokeStyle = "#00f";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(this.x - 3, this.y - 3, this.w + 6, this.h + 6);
-    }
-
-    if (this.sword) {
-      ctx.fillStyle = "#ff0";
-      ctx.fillRect(this.x + this.w, this.y + this.h / 2 - 2, 10, 4);
-    }
   }
 
   hit() {
@@ -135,6 +115,34 @@ class Player {
   }
 }
 
+class Enemy {
+  constructor(x, y, speed, color, pattern = 1) {
+    this.x = x;
+    this.y = y;
+    this.w = 25;
+    this.h = 25;
+    this.color = color;
+    this.speed = speed;
+    this.pattern = pattern;
+    this.direction = 1;
+  }
+
+  update() {
+    this.x -= this.speed;
+    if (this.pattern === 2) {
+      this.y += Math.sin(this.x / 15) * 3;
+    } else if (this.pattern === 3) {
+      this.y += this.direction * this.speed / 2;
+      if (this.y <= 0 || this.y + this.h >= HEIGHT) this.direction *= -1;
+    }
+  }
+
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+  }
+}
+
 class Boss {
   constructor(color) {
     this.x = WIDTH + 200;
@@ -143,40 +151,25 @@ class Boss {
     this.h = 160;
     this.color = color;
 
-    // 👑 Vida según nivel
     if (currentLevelIndex === levels.length - 1) {
-      this.hp = 30; // Último jefe final con 30 de vida
+      this.hp = 30;
     } else {
-      this.hp = 10; // Todos los demás bosses con 10 de vida
+      this.hp = 10;
     }
 
     this.speed = 1.5;
     this.direction = 1;
-    this.phase = 1;
   }
 
   update() {
     this.x -= this.speed;
     this.y += this.direction * 2;
     if (this.y <= 0 || this.y + this.h >= HEIGHT) this.direction *= -1;
-
-    if (this.hp < 5 && this.phase === 1) {
-      this.phase = 2;
-      this.speed += 1;
-    }
   }
 
   draw() {
     ctx.fillStyle = this.color;
-    ctx.shadowBlur = 25;
-    ctx.shadowColor = this.color;
     ctx.fillRect(this.x, this.y, this.w, this.h);
-    ctx.shadowBlur = 0;
-
-    ctx.fillStyle = "#000";
-    ctx.fillRect(this.x + 40, this.y + 40, 20, 20);
-    ctx.fillRect(this.x + 100, this.y + 40, 20, 20);
-    ctx.fillRect(this.x + 60, this.y + 110, 40, 10);
   }
 }
 
@@ -269,7 +262,7 @@ class Game {
       }
 
       if (this.boss && this.checkCollision(projectile, this.boss)) {
-        this.boss.hp -= 5; // 💥 Daño aumentado
+        this.boss.hp -= 5;
         projectile.active = false;
         if (this.boss.hp <= 0) {
           this.gameOver = true;
@@ -331,7 +324,6 @@ function startGame() {
   transitionScreen.style.display = 'none';
   shopScreen.style.display = 'none';
   canvas.style.display = 'block';
-
   requestAnimationFrame(gameLoop);
 }
 
@@ -394,14 +386,15 @@ buyLifeBtn.addEventListener('click', () => {
 
 buyShieldBtn.addEventListener('click', () => {
   if (playerRunes >= 75) {
-    game.player.shield = true;
+    game.player.invulnerable = true;
+    game.player.invulnerableTimer = 150;
     playerRunes -= 75;
   }
 });
 
 buySwordBtn.addEventListener('click', () => {
   if (playerRunes >= 100) {
-    game.player.sword = true;
+    // Aquí podrías agregar mejora futura
     playerRunes -= 100;
   }
 });
