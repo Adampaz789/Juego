@@ -205,6 +205,28 @@ class Boss {
   }
 }
 
+class Projectile {
+  constructor(x, y, speed) {
+    this.x = x;
+    this.y = y;
+    this.w = 10;
+    this.h = 5;
+    this.color = "#ff0";
+    this.speed = speed;
+    this.active = true;
+  }
+
+  update() {
+    this.x += this.speed;
+    if (this.x > WIDTH) this.active = false;
+  }
+
+  draw() {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.w, this.h);
+  }
+}
+
 class Item {
   constructor(x, y, type) {
     this.x = x;
@@ -238,6 +260,7 @@ class Game {
     this.player = new Player();
     this.enemies = [];
     this.items = [];
+    this.projectiles = [];
     this.boss = null;
     this.keys = {};
     this.bossAppeared = false;
@@ -325,28 +348,33 @@ class Game {
       }
     }
 
-    if (this.boss) {
-      this.boss.update();
-      if (this.checkCollision(this.player, this.boss)) {
-        this.player.hit();
-        if (this.player.lives <= 0) {
-          this.gameOver = true;
-          showGameOver();
+    for (let projectile of this.projectiles) {
+      projectile.update();
+
+      for (let enemy of this.enemies) {
+        if (this.checkCollision(projectile, enemy)) {
+          enemy.x = -100;
+          projectile.active = false;
+          this.score += 100;
+          playerRunes += 10;
         }
       }
 
-      if (this.boss.x < WIDTH - this.boss.w - 20) {
-        this.boss.hp -= 0.1;
-      }
-
-      if (this.boss.hp <= 0) {
-        this.gameOver = true;
-        setTimeout(() => showTransition(), 1000);
+      if (this.boss && this.checkCollision(projectile, this.boss)) {
+        this.boss.hp -= 1;
+        projectile.active = false;
+        if (this.boss.hp <= 0) {
+          this.gameOver = true;
+          setTimeout(() => showTransition(), 1000);
+        }
       }
     }
 
     this.enemies = this.enemies.filter(e => e.x + e.w > 0);
     this.items = this.items.filter(i => i.active);
+    this.projectiles = this.projectiles.filter(p => p.active);
+
+    if (this.boss) this.boss.update();
 
     this.score += 1;
   }
@@ -366,23 +394,27 @@ class Game {
   draw() {
     this.bg.draw();
     this.player.draw();
-    for (let enemy of this.enemies) {
-      enemy.draw();
-    }
-    for (let item of this.items) {
-      item.draw();
-    }
+    for (let enemy of this.enemies) enemy.draw();
+    for (let item of this.items) item.draw();
+    for (let projectile of this.projectiles) projectile.draw();
     if (this.boss) this.boss.draw();
     this.drawHUD();
   }
 }
 
-// 🎮 Eventos globales
 document.addEventListener('keydown', e => {
   if (game) game.keys[e.key] = true;
 });
 document.addEventListener('keyup', e => {
   if (game) game.keys[e.key] = false;
+});
+
+canvas.addEventListener('mousedown', e => {
+  if (e.button === 0 && game) { // clic izquierdo
+    const px = game.player.x + game.player.w;
+    const py = game.player.y + game.player.h / 2 - 2;
+    game.projectiles.push(new Projectile(px, py, 8));
+  }
 });
 
 function startGame() {
