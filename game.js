@@ -135,37 +135,6 @@ class Player {
   }
 }
 
-class Enemy {
-  constructor(x, y, speed, color, pattern = 1) {
-    this.x = x;
-    this.y = y;
-    this.w = 25;
-    this.h = 25;
-    this.color = color;
-    this.speed = speed;
-    this.pattern = pattern;
-    this.direction = 1;
-  }
-
-  update() {
-    this.x -= this.speed;
-    if (this.pattern === 2) {
-      this.y += Math.sin(this.x / 15) * 3;
-    } else if (this.pattern === 3) {
-      this.y += this.direction * this.speed / 2;
-      if (this.y <= 0 || this.y + this.h >= HEIGHT) this.direction *= -1;
-    }
-  }
-
-  draw() {
-    ctx.fillStyle = this.color;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = this.color;
-    ctx.fillRect(this.x, this.y, this.w, this.h);
-    ctx.shadowBlur = 0;
-  }
-}
-
 class Boss {
   constructor(color) {
     this.x = WIDTH + 200;
@@ -173,7 +142,14 @@ class Boss {
     this.w = 160;
     this.h = 160;
     this.color = color;
-    this.hp = 30; // ✅ Vida reducida a la mitad
+
+    // 👑 Vida según nivel
+    if (currentLevelIndex === levels.length - 1) {
+      this.hp = 30; // Último jefe final con 30 de vida
+    } else {
+      this.hp = 10; // Todos los demás bosses con 10 de vida
+    }
+
     this.speed = 1.5;
     this.direction = 1;
     this.phase = 1;
@@ -184,7 +160,7 @@ class Boss {
     this.y += this.direction * 2;
     if (this.y <= 0 || this.y + this.h >= HEIGHT) this.direction *= -1;
 
-    if (this.hp < 15 && this.phase === 1) {
+    if (this.hp < 5 && this.phase === 1) {
       this.phase = 2;
       this.speed += 1;
     }
@@ -293,7 +269,7 @@ class Game {
       }
 
       if (this.boss && this.checkCollision(projectile, this.boss)) {
-        this.boss.hp -= 5; // ✅ Daño aumentado
+        this.boss.hp -= 5; // 💥 Daño aumentado
         projectile.active = false;
         if (this.boss.hp <= 0) {
           this.gameOver = true;
