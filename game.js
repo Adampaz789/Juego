@@ -173,7 +173,7 @@ class Boss {
     this.w = 160;
     this.h = 160;
     this.color = color;
-    this.hp = 60;
+    this.hp = 30; // ✅ Vida reducida a la mitad
     this.speed = 1.5;
     this.direction = 1;
     this.phase = 1;
@@ -184,7 +184,7 @@ class Boss {
     this.y += this.direction * 2;
     if (this.y <= 0 || this.y + this.h >= HEIGHT) this.direction *= -1;
 
-    if (this.hp < 30 && this.phase === 1) {
+    if (this.hp < 15 && this.phase === 1) {
       this.phase = 2;
       this.speed += 1;
     }
@@ -200,7 +200,6 @@ class Boss {
     ctx.fillStyle = "#000";
     ctx.fillRect(this.x + 40, this.y + 40, 20, 20);
     ctx.fillRect(this.x + 100, this.y + 40, 20, 20);
-
     ctx.fillRect(this.x + 60, this.y + 110, 40, 10);
   }
 }
@@ -227,46 +226,17 @@ class Projectile {
   }
 }
 
-class Item {
-  constructor(x, y, type) {
-    this.x = x;
-    this.y = y;
-    this.w = 20;
-    this.h = 20;
-    this.type = type;
-    this.color = type === "shield" ? "#00f" : "#ff0";
-    this.speed = 2;
-    this.active = true;
-  }
-
-  update() {
-    this.x -= this.speed;
-    if (this.x + this.w < 0) this.active = false;
-  }
-
-  draw() {
-    if (!this.active) return;
-    ctx.fillStyle = this.color;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = this.color;
-    ctx.fillRect(this.x, this.y, this.w, this.h);
-    ctx.shadowBlur = 0;
-  }
-}
-
 class Game {
   constructor() {
     this.bg = new Background(levels[currentLevelIndex].color);
     this.player = new Player();
     this.enemies = [];
-    this.items = [];
     this.projectiles = [];
     this.boss = null;
     this.keys = {};
     this.bossAppeared = false;
     this.gameOver = false;
     this.spawnCooldown = 0;
-    this.itemCooldown = 500;
     this.score = 0;
   }
 
@@ -277,17 +247,8 @@ class Game {
     this.enemies.push(new Enemy(WIDTH, y, speed, levels[currentLevelIndex].enemyColor, pattern));
   }
 
-  spawnItem() {
-    let y = Math.random() * (HEIGHT - 60);
-    let type = Math.random() < 0.5 ? "shield" : "sword";
-    this.items.push(new Item(WIDTH + 100, y, type));
-  }
-
   checkCollision(a, b) {
-    return a.x < b.x + b.w &&
-           a.x + a.w > b.x &&
-           a.y < b.y + b.h &&
-           a.y + a.h > b.y;
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
   update() {
@@ -308,43 +269,14 @@ class Game {
       this.spawnCooldown--;
     }
 
-    if (this.itemCooldown <= 0) {
-      this.spawnItem();
-      this.itemCooldown = 700;
-    } else {
-      this.itemCooldown--;
-    }
-
     for (let enemy of this.enemies) {
       enemy.update();
       if (this.checkCollision(this.player, enemy)) {
-        if (this.player.sword) {
-          enemy.x = -100;
-          this.score += 100;
-          playerRunes += 10;
-        } else {
-          this.player.hit();
-          if (this.player.lives <= 0) {
-            this.gameOver = true;
-            showGameOver();
-          }
+        this.player.hit();
+        if (this.player.lives <= 0) {
+          this.gameOver = true;
+          showGameOver();
         }
-      }
-    }
-
-    for (let item of this.items) {
-      item.update();
-      if (item.active && this.checkCollision(this.player, item)) {
-        if (item.type === "shield") {
-          this.player.invulnerable = true;
-          this.player.shield = true;
-          this.player.invulnerableTimer = 150;
-        } else if (item.type === "sword") {
-          this.player.invulnerable = true;
-          this.player.sword = true;
-          this.player.invulnerableTimer = 150;
-        }
-        item.active = false;
       }
     }
 
@@ -361,7 +293,7 @@ class Game {
       }
 
       if (this.boss && this.checkCollision(projectile, this.boss)) {
-        this.boss.hp -= 1;
+        this.boss.hp -= 5; // ✅ Daño aumentado
         projectile.active = false;
         if (this.boss.hp <= 0) {
           this.gameOver = true;
@@ -371,7 +303,6 @@ class Game {
     }
 
     this.enemies = this.enemies.filter(e => e.x + e.w > 0);
-    this.items = this.items.filter(i => i.active);
     this.projectiles = this.projectiles.filter(p => p.active);
 
     if (this.boss) this.boss.update();
@@ -395,7 +326,6 @@ class Game {
     this.bg.draw();
     this.player.draw();
     for (let enemy of this.enemies) enemy.draw();
-    for (let item of this.items) item.draw();
     for (let projectile of this.projectiles) projectile.draw();
     if (this.boss) this.boss.draw();
     this.drawHUD();
@@ -410,7 +340,7 @@ document.addEventListener('keyup', e => {
 });
 
 canvas.addEventListener('mousedown', e => {
-  if (e.button === 0 && game) { // clic izquierdo
+  if (e.button === 0 && game) {
     const px = game.player.x + game.player.w;
     const py = game.player.y + game.player.h / 2 - 2;
     game.projectiles.push(new Projectile(px, py, 8));
@@ -446,11 +376,6 @@ function showTransition() {
   canvas.style.display = 'none';
 }
 
-function showShop() {
-  shopScreen.style.display = 'block';
-  transitionScreen.style.display = 'none';
-}
-
 function showWin() {
   winScore.textContent = `Total runes: ${playerRunes}`;
   winScreen.style.display = 'block';
@@ -478,7 +403,10 @@ restartWinBtn.addEventListener('click', () => {
   playerRunes = 0;
   startGame();
 });
-nextLevelBtn.addEventListener('click', showShop);
+nextLevelBtn.addEventListener('click', () => {
+  shopScreen.style.display = 'block';
+  transitionScreen.style.display = 'none';
+});
 continueBtn.addEventListener('click', startGame);
 
 buyLifeBtn.addEventListener('click', () => {
